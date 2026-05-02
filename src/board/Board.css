@@ -1,0 +1,15 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-6);
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+}
+@media (max-width: 900px) {
+  .board { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 540px) {
+  .board { grid-template-columns: 1fr; padding: var(--space-4) var(--space-3); }
+}
