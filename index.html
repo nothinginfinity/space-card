@@ -1,15 +1,806 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Space Card</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300..700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root,[data-theme="light"]{
+  --bg:#f7f6f2;--surface:#f9f8f5;--surface-2:#fbfbf9;
+  --surface-off:#f3f0ec;--surface-dyn:#e6e4df;
+  --divider:#dcd9d5;--border:#d4d1ca;
+  --text:#28251d;--muted:#7a7974;--faint:#bab9b4;--inverse:#f9f8f4;
+  --primary:#01696f;--primary-h:#0c4e54;--primary-hi:#cedcd8;
+  --col-inbox:#006494;--col-progress:#437a22;--col-waiting:#d19900;--col-done:#7a7974;
+  --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+  --shadow-sm:0 1px 2px oklch(0.2 0.01 80/.06);
+  --shadow-md:0 4px 12px oklch(0.2 0.01 80/.08);
+  --shadow-lg:0 12px 32px oklch(0.2 0.01 80/.12);
+  --t:180ms cubic-bezier(.16,1,.3,1);
+  --font:'Geist',system-ui,sans-serif;
+  --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);
+  --text-sm:clamp(.875rem,.8rem + .35vw,1rem);
+  --text-base:clamp(1rem,.95rem + .25vw,1.125rem);
+  --text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+  --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+  --text-2xl:clamp(2rem,1.2rem + 2.5vw,3.5rem);
+}
+[data-theme="dark"]{
+  --bg:#0f0e0d;--surface:#171614;--surface-2:#1c1b19;
+  --surface-off:#1d1c1a;--surface-dyn:#2d2c2a;
+  --divider:#262523;--border:#393836;
+  --text:#cdccca;--muted:#797876;--faint:#5a5957;--inverse:#2b2a28;
+  --primary:#4f98a3;--primary-h:#227f8b;--primary-hi:#313b3b;
+  --col-inbox:#5591c7;--col-progress:#6daa45;--col-waiting:#e8af34;--col-done:#797876;
+  --shadow-sm:0 1px 2px oklch(0 0 0/.2);
+  --shadow-md:0 4px 12px oklch(0 0 0/.3);
+  --shadow-lg:0 12px 32px oklch(0 0 0/.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font);font-size:var(--text-base);color:var(--text);background:var(--bg);transition:background var(--t),color var(--t)}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+img,svg{display:block}
+::selection{background:oklch(from var(--primary) l c h/.25)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--radius-sm)}
+
+/* ── SCREEN SWITCHER ── */
+.screen{display:none;min-height:100dvh}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── LANDING ── */
+#landing{
+  position:relative;overflow:hidden;
+  align-items:center;justify-content:center;
+  padding:2rem;
+}
+.land-noise{
+  position:absolute;inset:0;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px;
+  pointer-events:none;
+}
+.land-glow{
+  position:absolute;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,oklch(from var(--primary) l c h/.18) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-60%);
+  pointer-events:none;
+}
+.land-inner{position:relative;z-index:1;max-width:540px;width:100%;text-align:center}
+.land-logo{
+  display:inline-flex;align-items:center;gap:.5rem;
+  margin-bottom:2.5rem;
+  font-size:var(--text-sm);font-weight:600;letter-spacing:.04em;color:var(--muted);
+}
+.land-logo svg{color:var(--primary)}
+.land-h1{
+  font-size:var(--text-2xl);font-weight:700;line-height:1.1;
+  letter-spacing:-.02em;margin-bottom:1rem;
+}
+.land-h1 span{color:var(--primary)}
+.land-sub{
+  font-size:var(--text-base);color:var(--muted);line-height:1.6;
+  max-width:42ch;margin:0 auto 2rem;
+}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--primary);color:var(--inverse);
+  padding:.75rem 1.5rem;border-radius:var(--radius-full);
+  font-size:var(--text-sm);font-weight:600;
+  transition:background var(--t),box-shadow var(--t),transform var(--t);
+  box-shadow:var(--shadow-md);
+}
+.btn-primary:hover{background:var(--primary-h);transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+.btn-primary:active{transform:translateY(0)}
+.land-features{
+  display:flex;gap:1.5rem;justify-content:center;
+  margin-top:3rem;flex-wrap:wrap;
+}
+.feat{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:var(--text-xs);color:var(--muted);
+}
+.feat svg{color:var(--primary);flex-shrink:0}
+.land-theme{
+  position:fixed;top:1rem;right:1rem;z-index:100;
+  width:36px;height:36px;border-radius:var(--radius-full);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);
+  background:var(--surface);border:1px solid var(--border);
+  transition:color var(--t),background var(--t);
+}
+.land-theme:hover{color:var(--text)}
+
+/* ── SIGNUP ── */
+#signup{
+  align-items:center;justify-content:center;
+  padding:2rem;
+  background:var(--bg);
+}
+.signup-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:2.5rem 2rem;max-width:420px;width:100%;
+  box-shadow:var(--shadow-lg);
+}
+.signup-back{
+  display:inline-flex;align-items:center;gap:.375rem;
+  font-size:var(--text-xs);color:var(--muted);
+  margin-bottom:1.5rem;
+  transition:color var(--t);
+}
+.signup-back:hover{color:var(--text)}
+.signup-logo{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:var(--text-sm);font-weight:600;color:var(--muted);
+  margin-bottom:1.5rem;
+}
+.signup-logo svg{color:var(--primary)}
+.signup-h2{font-size:var(--text-lg);font-weight:700;margin-bottom:.25rem}
+.signup-sub{font-size:var(--text-sm);color:var(--muted);margin-bottom:1.75rem}
+.field{margin-bottom:1rem}
+.field label{
+  display:block;font-size:var(--text-xs);font-weight:500;
+  color:var(--muted);margin-bottom:.375rem;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.field input{
+  width:100%;padding:.625rem .875rem;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  font-size:var(--text-sm);
+  transition:border-color var(--t),box-shadow var(--t);
+}
+.field input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px oklch(from var(--primary) l c h/.12);
+  outline:none;
+}
+.field input::placeholder{color:var(--faint)}
+.btn-submit{
+  width:100%;padding:.75rem;margin-top:.5rem;
+  background:var(--primary);color:var(--inverse);
+  border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;
+  transition:background var(--t),transform var(--t);
+}
+.btn-submit:hover{background:var(--primary-h)}
+.btn-submit:active{transform:scale(.99)}
+.signup-terms{
+  font-size:var(--text-xs);color:var(--faint);
+  text-align:center;margin-top:1rem;line-height:1.5;
+}
+
+/* ── DASHBOARD ── */
+#dashboard{flex-direction:column;background:var(--bg)}
+.dash-header{
+  height:52px;display:flex;align-items:center;
+  padding:0 1rem;gap:.75rem;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:50;
+}
+.dash-logo{
+  display:flex;align-items:center;gap:.375rem;
+  font-size:var(--text-sm);font-weight:700;color:var(--text);
+}
+.dash-logo svg{color:var(--primary)}
+.dash-spacer{flex:1}
+.dash-user{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:var(--text-xs);color:var(--muted);
+}
+.avatar{
+  width:28px;height:28px;border-radius:var(--radius-full);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--inverse);
+  background:var(--primary);
+  flex-shrink:0;
+}
+.dash-theme{
+  width:32px;height:32px;border-radius:var(--radius-full);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);
+  transition:color var(--t);
+}
+.dash-theme:hover{color:var(--text)}
+
+/* ── BOARD ── */
+.board-wrap{flex:1;overflow:auto;padding:1.25rem}
+.board-title{
+  font-size:var(--text-xs);font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);margin-bottom:1rem;
+}
+.board{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(220px,1fr));
+  gap:.875rem;
+  min-width:900px;
+}
+@media(max-width:768px){
+  .board{grid-template-columns:1fr;min-width:unset}
+}
+.col{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.col-header{
+  padding:.625rem .875rem;
+  display:flex;align-items:center;gap:.5rem;
+  border-bottom:1px solid var(--divider);
+}
+.col-dot{width:8px;height:8px;border-radius:var(--radius-full);flex-shrink:0}
+.col-name{font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.07em;flex:1}
+.col-count{
+  font-size:var(--text-xs);font-weight:600;
+  background:var(--surface-off);
+  color:var(--muted);
+  padding:.1rem .45rem;border-radius:var(--radius-full);
+}
+.col-body{padding:.625rem;display:flex;flex-direction:column;gap:.5rem}
+
+/* ── SPACE CARD ── */
+.card{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:.75rem;
+  cursor:pointer;
+  transition:box-shadow var(--t),transform var(--t),border-color var(--t);
+  position:relative;
+  -webkit-user-select:none;user-select:none;
+}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);border-color:oklch(from var(--primary) l c h/.35)}
+.card:active{transform:scale(.99)}
+.card-top{display:flex;align-items:flex-start;gap:.625rem}
+.card-icon{
+  width:32px;height:32px;border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;font-weight:700;
+  background:var(--surface-off);
+}
+.card-meta{flex:1;min-width:0}
+.card-name{font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-role{font-size:var(--text-xs);color:var(--muted);margin-top:.1rem}
+.card-badge{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:700;
+  padding:.1rem .4rem;border-radius:var(--radius-full);
+  background:oklch(from var(--primary) l c h/.15);
+  color:var(--primary);
+}
+.card-badge.unread{
+  background:oklch(from var(--col-inbox) l c h/.15);
+  color:var(--col-inbox);
+}
+.card-preview{
+  font-size:var(--text-xs);color:var(--muted);
+  margin-top:.5rem;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.card-threads{margin-top:.5rem;display:flex;flex-direction:column;gap:.375rem}
+.thread{
+  background:var(--surface-off);border-radius:var(--radius-sm);
+  padding:.5rem .625rem;
+  font-size:var(--text-xs);color:var(--muted);
+  display:flex;align-items:center;gap:.5rem;
+}
+.thread-dot{width:6px;height:6px;border-radius:var(--radius-full);background:var(--primary);flex-shrink:0}
+.thread-text{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thread-time{color:var(--faint);flex-shrink:0}
+
+/* threads toggle */
+.card-expand{
+  width:100%;display:flex;align-items:center;gap:.375rem;
+  font-size:var(--text-xs);color:var(--faint);
+  margin-top:.5rem;padding-top:.5rem;
+  border-top:1px solid var(--divider);
+  transition:color var(--t);
+}
+.card-expand:hover{color:var(--muted)}
+.card-expand svg{transition:transform var(--t)}
+.card-expand.open svg{transform:rotate(180deg)}
+
+/* ── ACTION SHEET ── */
+.sheet-backdrop{
+  position:fixed;inset:0;z-index:200;
+  background:oklch(0 0 0/.5);
+  backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;
+  transition:opacity var(--t);
+}
+.sheet-backdrop.open{opacity:1;pointer-events:all}
+.sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:201;
+  background:var(--surface);border-top:1px solid var(--border);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:1rem;
+  transform:translateY(100%);
+  transition:transform .28s cubic-bezier(.16,1,.3,1);
+  max-width:480px;margin:0 auto;
+}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{
+  width:36px;height:4px;border-radius:var(--radius-full);
+  background:var(--border);margin:0 auto .875rem;
+}
+.sheet-title{font-size:var(--text-sm);font-weight:700;margin-bottom:.875rem}
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.sheet-btn{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.625rem .75rem;
+  background:var(--surface-off);border-radius:var(--radius-md);
+  font-size:var(--text-sm);
+  transition:background var(--t),color var(--t);
+}
+.sheet-btn:hover{background:var(--surface-dyn)}
+.sheet-btn.destructive{color:#dd6974}
+.sheet-btn.destructive:hover{background:oklch(from #dd6974 l c h/.12)}
+
+/* ── ADD SPACE ── */
+.add-btn{
+  display:flex;align-items:center;gap:.5rem;
+  width:100%;padding:.625rem;
+  border-radius:var(--radius-md);
+  border:1px dashed var(--border);
+  font-size:var(--text-xs);color:var(--faint);
+  transition:border-color var(--t),color var(--t),background var(--t);
+  margin-top:.25rem;
+}
+.add-btn:hover{border-color:var(--primary);color:var(--primary);background:oklch(from var(--primary) l c h/.05)}
+
+/* ── EMPTY STATE ── */
+.empty-col{
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:1.5rem 1rem;
+  color:var(--faint);
+}
+.empty-col svg{margin-bottom:.5rem;opacity:.4}
+.empty-col p{font-size:var(--text-xs)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(2rem);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-full);
+  padding:.5rem 1rem;
+  font-size:var(--text-xs);font-weight:500;
+  box-shadow:var(--shadow-lg);
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+  white-space:nowrap;z-index:300;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 1 — LANDING
+═══════════════════════════════════════════════ -->
+<section id="landing" class="screen active">
+  <div class="land-noise"></div>
+  <div class="land-glow"></div>
+
+  <!-- theme toggle -->
+  <button class="land-theme" data-theme-toggle aria-label="Toggle theme">
+    <svg id="theme-icon-land" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+
+  <div class="land-inner">
+    <div class="land-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-label="Space Card logo">
+        <rect x="2" y="3" width="20" height="14" rx="3"/>
+        <path d="M7 21h10M12 17v4"/>
+      </svg>
+      space-card
+    </div>
+
+    <h1 class="land-h1">Your repos,<br><span>as a living workspace.</span></h1>
+    <p class="land-sub">Space Card turns every GitHub repo into a collaborative Space — with persistent AI agents, inbox/outbox messaging, and a kanban board that actually knows your context.</p>
+
+    <button class="btn-primary" onclick="showScreen('signup')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V11"/><path d="M17 2l4 4-10 10H7v-4L17 2z"/></svg>
+      Get started free
+    </button>
+
+    <div class="land-features">
+      <span class="feat">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Spaces-first UI
+      </span>
+      <span class="feat">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Inbox / outbox per repo
+      </span>
+      <span class="feat">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        AI-ready instruction generator
+      </span>
+      <span class="feat">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Works with any LLM
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 2 — SIGN UP
+═══════════════════════════════════════════════ -->
+<section id="signup" class="screen">
+  <div style="position:fixed;top:1rem;right:1rem;z-index:100">
+    <button class="land-theme" data-theme-toggle aria-label="Toggle theme">
+      <svg id="theme-icon-signup" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+  <div class="signup-card">
+    <button class="signup-back" onclick="showScreen('landing')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div class="signup-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="2" y="3" width="20" height="14" rx="3"/>
+        <path d="M7 21h10M12 17v4"/>
+      </svg>
+      space-card
+    </div>
+    <h2 class="signup-h2">Create your workspace</h2>
+    <p class="signup-sub">Start with your name and a handle — you can connect repos after.</p>
+
+    <form id="signup-form" onsubmit="handleSignup(event)">
+      <div class="field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" type="text" placeholder="Jared Edwards" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="f-handle">Workspace handle</label>
+        <input id="f-handle" type="text" placeholder="nothinginfinity" autocomplete="username"
+          pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, hyphens only" required>
+      </div>
+      <div class="field">
+        <label for="f-email">Email</label>
+        <input id="f-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <button type="submit" class="btn-submit">Create workspace →</button>
+    </form>
+    <p class="signup-terms">By continuing you agree to the Terms of Service and Privacy Policy.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 3 — DASHBOARD
+═══════════════════════════════════════════════ -->
+<section id="dashboard" class="screen">
+
+  <!-- header -->
+  <header class="dash-header">
+    <div class="dash-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="2" y="3" width="20" height="14" rx="3"/>
+        <path d="M7 21h10M12 17v4"/>
+      </svg>
+      space-card
+    </div>
+    <div class="dash-spacer"></div>
+    <div class="dash-user">
+      <span id="dash-handle" style="color:var(--muted)">@handle</span>
+      <div class="avatar" id="dash-avatar">JE</div>
+    </div>
+    <button class="dash-theme" data-theme-toggle aria-label="Toggle theme">
+      <svg id="theme-icon-dash" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </header>
+
+  <!-- board -->
+  <div class="board-wrap">
+    <p class="board-title">Spaces board</p>
+    <div class="board" id="board"><!-- rendered by JS --></div>
+  </div>
+</section>
+
+<!-- ── ACTION SHEET ── -->
+<div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Space actions">
+  <div class="sheet-handle"></div>
+  <p class="sheet-title" id="sheet-title">Actions</p>
+  <div class="sheet-actions">
+    <button class="sheet-btn" onclick="sheetAction('open')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="3"/><path d="M12 17v4M7 21h10"/></svg>
+      Open Space
+    </button>
+    <button class="sheet-btn" onclick="sheetAction('move')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+      Move column
+    </button>
+    <button class="sheet-btn" onclick="sheetAction('inbox')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      View inbox
+    </button>
+    <button class="sheet-btn destructive" onclick="sheetAction('archive')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      Archive
+    </button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let currentTheme = 'dark';
+let activeCard = null;
+let holdTimer = null;
+let moveStart = null;
+let user = { name: 'Jared Edwards', handle: 'nothinginfinity', initials: 'JE' };
+
+const COLS = [
+  { id:'inbox',    label:'Inbox',       color:'var(--col-inbox)' },
+  { id:'progress', label:'In Progress', color:'var(--col-progress)' },
+  { id:'waiting',  label:'Waiting',     color:'var(--col-waiting)' },
+  { id:'done',     label:'Done',        color:'var(--col-done)' },
+];
+
+let spaces = [
+  {
+    id:'s1', col:'progress', icon:'🏗️', name:'studio-spaces',
+    role:'UI/UX Framework', unread:3,
+    preview:'Latest commit: feat(board) add kanban drag reorder',
+    threads:[
+      { text:'Design tokens finalized', time:'2m' },
+      { text:'Mobile breakpoints TODO', time:'14m' },
+    ],
+    expanded:false,
+  },
+  {
+    id:'s2', col:'inbox', icon:'📥', name:'mmcp-generator',
+    role:'Automation Tool', unread:7,
+    preview:'New Space instructions ready — 3 repos queued',
+    threads:[
+      { text:'studio-brainstorm wired', time:'5m' },
+      { text:'space-card link generated', time:'1h' },
+    ],
+    expanded:false,
+  },
+  {
+    id:'s3', col:'progress', icon:'🃏', name:'space-card',
+    role:'Component Library', unread:1,
+    preview:'index.html deployed to GitHub Pages ✓',
+    threads:[
+      { text:'Landing → signup flow done', time:'just now' },
+      { text:'Board seed data added', time:'3m' },
+    ],
+    expanded:true,
+  },
+  {
+    id:'s4', col:'waiting', icon:'💡', name:'studio-brainstorm',
+    role:'Ideas & Strategy', unread:0,
+    preview:'Waiting on studio-spaces milestone before next sprint',
+    threads:[],
+    expanded:false,
+  },
+  {
+    id:'s5', col:'done', icon:'✅', name:'studio-os-chat',
+    role:'AI Messaging Layer', unread:0,
+    preview:'Inbox/outbox schema locked. Ready for agents.',
+    threads:[],
+    expanded:false,
+  },
+];
+
+// ── SCREEN NAV ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='dashboard') renderBoard();
+}
+
+// ── SIGNUP ──
+function handleSignup(e){
+  e.preventDefault();
+  const name = document.getElementById('f-name').value.trim();
+  const handle = document.getElementById('f-handle').value.trim();
+  user.name = name;
+  user.handle = handle;
+  user.initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('dash-handle').textContent = '@'+handle;
+  document.getElementById('dash-avatar').textContent = user.initials;
+  showScreen('dashboard');
+}
+
+// ── THEME ──
+function syncThemeIcons(){
+  const moon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+  const sun = `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
+  const inner = currentTheme==='dark' ? sun : moon;
+  ['land','signup','dash'].forEach(id=>{
+    const el = document.getElementById('theme-icon-'+id);
+    if(el) el.innerHTML = inner;
+  });
+}
+
+document.querySelectorAll('[data-theme-toggle]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    currentTheme = currentTheme==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    syncThemeIcons();
+  });
+});
+// init icons
+syncThemeIcons();
+
+// ── BOARD RENDER ──
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  COLS.forEach(col=>{
+    const cards = spaces.filter(s=>s.col===col.id);
+    const colEl = document.createElement('div');
+    colEl.className = 'col';
+    colEl.dataset.col = col.id;
+    colEl.innerHTML = `
+      <div class="col-header">
+        <div class="col-dot" style="background:${col.color}"></div>
+        <span class="col-name">${col.label}</span>
+        <span class="col-count">${cards.length}</span>
+      </div>
+      <div class="col-body" id="col-${col.id}">
+        ${cards.length===0 ? emptyState() : ''}
+        ${cards.map(c=>cardHTML(c)).join('')}
+        <button class="add-btn" onclick="addSpace('${col.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Space
+        </button>
+      </div>
+    `;
+    board.appendChild(colEl);
+  });
+  attachCardEvents();
+}
+
+function emptyState(){
+  return `<div class="empty-col">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+    <p>No spaces here</p>
+  </div>`;
+}
+
+function cardHTML(c){
+  const badgeHTML = c.unread > 0
+    ? `<span class="card-badge unread">${c.unread} new</span>`
+    : `<span class="card-badge">${c.role.split(' ')[0]}</span>`;
+
+  const threadsHTML = c.expanded && c.threads.length > 0
+    ? `<div class="card-threads">${c.threads.map(t=>`
+        <div class="thread">
+          <div class="thread-dot"></div>
+          <span class="thread-text">${t.text}</span>
+          <span class="thread-time">${t.time}</span>
+        </div>`).join('')}
+      </div>` : '';
+
+  const expandBtn = c.threads.length > 0
+    ? `<button class="card-expand ${c.expanded?'open':''}" onclick="toggleExpand(event,'${c.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        ${c.expanded ? 'Hide' : c.threads.length} thread${c.threads.length!==1?'s':''}
+      </button>` : '';
+
+  return `
+  <div class="card" data-id="${c.id}"
+    ontouchstart="startHold(event,'${c.id}')" ontouchend="endHold()" ontouchmove="cancelHold()"
+    onmousedown="startHold(event,'${c.id}')" onmouseup="endHold()" onmouseleave="endHold()">
+    <div class="card-top">
+      <div class="card-icon">${c.icon}</div>
+      <div class="card-meta">
+        <div class="card-name">${c.name}</div>
+        <div class="card-role">${c.role}</div>
+      </div>
+      ${badgeHTML}
+    </div>
+    <div class="card-preview">${c.preview}</div>
+    ${threadsHTML}
+    ${expandBtn}
+  </div>`;
+}
+
+function attachCardEvents(){
+  document.querySelectorAll('.card').forEach(el=>{
+    el.addEventListener('click', e=>{
+      if(e.target.closest('.card-expand')) return;
+      const id = el.dataset.id;
+      const space = spaces.find(s=>s.id===id);
+      if(space && space._held){ space._held=false; return; }
+    });
+  });
+}
+
+// ── HOLD (long press) ──
+function startHold(e, id){
+  moveStart = { x: e.touches?e.touches[0].clientX:e.clientX, y: e.touches?e.touches[0].clientY:e.clientY };
+  holdTimer = setTimeout(()=>{
+    const space = spaces.find(s=>s.id===id);
+    if(space) space._held = true;
+    openSheet(id);
+  }, 480);
+}
+function endHold(){ clearTimeout(holdTimer) }
+function cancelHold(e){
+  if(!moveStart) return;
+  const dx = Math.abs((e.touches?e.touches[0].clientX:e.clientX)-moveStart.x);
+  const dy = Math.abs((e.touches?e.touches[0].clientY:e.clientY)-moveStart.y);
+  if(dx>8||dy>8) clearTimeout(holdTimer);
+}
+
+// ── EXPAND THREADS ──
+function toggleExpand(e,id){
+  e.stopPropagation();
+  const space = spaces.find(s=>s.id===id);
+  if(space){ space.expanded=!space.expanded; renderBoard(); }
+}
+
+// ── ACTION SHEET ──
+function openSheet(id){
+  activeCard = id;
+  const space = spaces.find(s=>s.id===id);
+  document.getElementById('sheet-title').textContent = space ? space.name : 'Actions';
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet(){
+  document.getElementById('backdrop').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+  activeCard = null;
+}
+function sheetAction(action){
+  const space = spaces.find(s=>s.id===activeCard);
+  if(!space){ closeSheet(); return; }
+  if(action==='move'){
+    const cols = COLS.map(c=>c.id);
+    const next = cols[(cols.indexOf(space.col)+1)%cols.length];
+    space.col = next;
+    showToast(`Moved "${space.name}" to ${COLS.find(c=>c.id===next).label}`);
+    renderBoard();
+  } else if(action==='archive'){
+    spaces = spaces.filter(s=>s.id!==activeCard);
+    showToast(`"${space.name}" archived`);
+    renderBoard();
+  } else if(action==='inbox'){
+    showToast(`Opening inbox for ${space.name}…`);
+  } else if(action==='open'){
+    showToast(`Opening ${space.name}…`);
+  }
+  closeSheet();
+}
+
+// ── ADD SPACE ──
+function addSpace(colId){
+  const name = prompt('New Space name (e.g. my-new-repo):');
+  if(!name||!name.trim()) return;
+  spaces.push({
+    id:'s'+Date.now(), col:colId, icon:'📦',
+    name:name.trim(), role:'New Space', unread:0,
+    preview:'No messages yet — start by connecting a repo.',
+    threads:[], expanded:false,
+  });
+  renderBoard();
+  showToast(`Space "${name.trim()}" created`);
+}
+
+// ── TOAST ──
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ── KEYBOARD CLOSE SHEET ──
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSheet(); });
+</script>
+</body>
 </html>
