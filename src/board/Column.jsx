@@ -1,9 +1,14 @@
+import { useDroppable } from '@dnd-kit/core'
 import { SpaceCard } from '../card/SpaceCard.jsx'
 import './Column.css'
 
 export function Column({ column, cards }) {
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  })
+
   return (
-    <div className="column">
+    <div className="column" ref={setNodeRef}>
       <div className="column-header">
         <span className="column-dot" style={{ background: column.color }} />
         <span className="column-label">{column.label}</span>

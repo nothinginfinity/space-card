@@ -1,5 +1,6 @@
 import { useStore } from '../store.js'
 import { Column } from './Column.jsx'
+import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core'
 import './Board.css'
 
 const COLUMNS = [
@@ -11,16 +12,35 @@ const COLUMNS = [
 
 export function Board() {
   const cards = useStore(s => s.cards)
+  const moveCard = useStore(s => s.moveCard)
+
+  function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over) return
+
+    const cardId = active.id
+    const targetColumnId = over.id
+    const card = cards.find(c => c.id === cardId)
+
+    if (card && card.column !== targetColumnId) {
+      moveCard(cardId, targetColumnId)
+    }
+  }
 
   return (
-    <div className="board">
-      {COLUMNS.map(col => (
-        <Column
-          key={col.id}
-          column={col}
-          cards={cards.filter(c => c.column === col.id)}
-        />
-      ))}
-    </div>
+    <DndContext
+      collisionDetection={closestCorners}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="board">
+        {COLUMNS.map(col => (
+          <Column
+            key={col.id}
+            column={col}
+            cards={cards.filter(c => c.column === col.id)}
+          />
+        ))}
+      </div>
+    </DndContext>
   )
 }

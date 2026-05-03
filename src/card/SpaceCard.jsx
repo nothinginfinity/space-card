@@ -1,3 +1,4 @@
+import { useDraggable } from '@dnd-kit/core'
 import { useStore } from '../store.js'
 import { useHold } from './useHold.js'
 import { ThreadCard } from './ThreadCard.jsx'
@@ -6,12 +7,21 @@ import './Card.css'
 export function SpaceCard({ card }) {
   const { openSheet, expandedCards, toggleExpand } = useStore()
   const expanded = expandedCards[card.id]
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: card.id,
+  })
 
   const holdHandlers = useHold(() => openSheet(card.id))
 
   return (
-    <div className={`space-card ${expanded ? 'space-card--expanded' : ''}`}>
-      <div className="space-card-main" {...holdHandlers}>
+    <div
+      className={`space-card ${expanded ? 'space-card--expanded' : ''} ${isDragging ? 'space-card--dragging' : ''}`}
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      {...holdHandlers}
+    >
+      <div className="space-card-main">
         <div className="space-card-top">
           <span className="space-card-icon">{card.icon}</span>
           <div className="space-card-meta">
